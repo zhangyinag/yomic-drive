@@ -1,5 +1,6 @@
 package com.yomic.drive.service.impl;
 
+import com.yomic.drive.domain.Example;
 import com.yomic.drive.domain.User;
 import com.yomic.drive.repository.UserRepository;
 import com.yomic.drive.service.UserService;
@@ -17,5 +18,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getUserList() {
         return userRepository.findAll();
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findById(username).orElse(null);
     }
 }

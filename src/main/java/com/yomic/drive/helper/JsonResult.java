@@ -1,5 +1,6 @@
 package com.yomic.drive.helper;
 
+import com.yomic.drive.constant.HttpJsonStatus;
 import lombok.Data;
 
 @Data
@@ -16,21 +17,21 @@ public class JsonResult<E> {
 
     public JsonResult(E data) {
         this.data = data;
-        this.code = StatusDict.SUCCESS.getCode();
-        this.message = StatusDict.SUCCESS.getMessage();
+        this.code = HttpJsonStatus.SUCCESS.getCode();
+        this.message = HttpJsonStatus.SUCCESS.getMessage();
     }
 
-    public JsonResult(StatusDict status) {
+    public JsonResult(HttpJsonStatus status) {
         this.code = status.getCode();
         this.message = status.getMessage();
     }
 
-    public JsonResult(StatusDict status, String message) {
+    public JsonResult(HttpJsonStatus status, String message) {
         this.code = status.getCode();
         this.message = message == null ? status.getMessage() : message;
     }
 
-    public JsonResult(StatusDict status, String message, E data) {
+    public JsonResult(HttpJsonStatus status, String message, E data) {
         this(status, message);
         this.data = data;
     }

@@ -13,6 +13,7 @@ public class JsonResult<E> {
     private String message;
 
     public JsonResult() {
+        this(HttpJsonStatus.SUCCESS);
     }
 
     public JsonResult(E data) {

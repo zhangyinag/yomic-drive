@@ -26,4 +26,7 @@ public class User{
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "username"), inverseJoinColumns = @JoinColumn(name = "role_code"))
     private List<Role> roleList;
+
+    @ManyToOne
+    private Dept dept;
 }

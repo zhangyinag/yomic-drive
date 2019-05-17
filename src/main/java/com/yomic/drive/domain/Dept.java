@@ -1,20 +1,15 @@
 package com.yomic.drive.domain;
 
+import com.yomic.drive.domain.common.CascadeEntity;
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.List;
 
+@ApiModel
 @Data
 @Entity
-public class Dept {
-
-    @Id
-    @GeneratedValue
-    private Long id;
+public class Dept extends CascadeEntity<Dept> {
 
     private String name;
-
-    @OneToOne()
-    private Dept parent;
 }

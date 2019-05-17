@@ -1,6 +1,7 @@
 package com.yomic.drive.constant;
 
 public enum HttpJsonStatus {
+    VALID_FAIL("30000", "参数校验失败"),
     EXCEPTION("20000", "服务器异常"),
     ACCESS_DENIED("110000", "没有访问权限"),
     AUTH_REQUIRED("100000", "未登录"),

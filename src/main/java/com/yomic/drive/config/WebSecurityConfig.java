@@ -54,7 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .authorizeRequests()
                 .antMatchers("/login").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll() // TODO 暂时放开权限控制
             .and().formLogin()
                 .successHandler(handler)
                 .failureHandler(handler)

@@ -2,11 +2,14 @@ package com.yomic.drive.web;
 
 import com.yomic.drive.helper.JsonResult;
 import com.yomic.drive.constant.HttpJsonStatus;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
+@Api(tags = "认证/授权相关接口")
 @RestController
 public class AuthController {
 
@@ -16,6 +19,10 @@ public class AuthController {
      * @return
      */
     @ApiOperation("登录")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "username", defaultValue = "user"),
+            @ApiImplicitParam(name = "password", defaultValue = "123456"),
+    })
     @PostMapping("/login")
     public JsonResult login (String username, String password) {
         return new JsonResult(HttpJsonStatus.SUCCESS);

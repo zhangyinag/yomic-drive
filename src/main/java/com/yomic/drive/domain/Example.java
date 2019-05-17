@@ -1,17 +1,13 @@
 package com.yomic.drive.domain;
 
+import com.yomic.drive.domain.common.BaseEntity;
 import lombok.Data;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 
 @Data
 @Entity
-public class Example {
-    @Id
-    @GeneratedValue
-    private Long id;
+public class Example extends BaseEntity {
 
     private String name;
 

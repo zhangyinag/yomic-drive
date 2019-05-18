@@ -1,19 +1,15 @@
 package com.yomic.drive.domain.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.persistence.*;
 import java.util.List;
 
-@ApiModel()
 @Data
 @MappedSuperclass
 public class CascadeEntity<E extends CascadeEntity> extends BaseEntity{
 
-    @ApiModelProperty(hidden = true)
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     private E parent;
@@ -26,9 +22,12 @@ public class CascadeEntity<E extends CascadeEntity> extends BaseEntity{
     }
 
     public void setParentId (Long parentId) {
+        E parent = null;
         try {
-            E parent = (E)this.getClass().newInstance();
-            parent.setId(parentId);
+            if (parentId != null) {
+                parent = (E)this.getClass().newInstance();
+                parent.setId(parentId);
+            }
             this.parent = parent;
         } catch (Exception e) {
             throw new RuntimeException(e);

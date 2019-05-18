@@ -1,8 +1,6 @@
 package com.yomic.drive.domain.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -14,38 +12,33 @@ import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+import java.io.Serializable;
 import java.util.Date;
 
-@ApiModel
 @Data
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public class BaseEntity {
+public class BaseEntity implements Serializable {
 
     /**
      * 总是选择代理键作为主键，这可能不是一个最好的策略，但这样可以节省构建领域模型的编码
      */
-    @ApiModelProperty(hidden = true)
     @Id
     @GeneratedValue
     protected Long id;
 
-    @ApiModelProperty(value = "111", hidden = true)
     @JsonIgnore
     @CreatedDate
     private Date createdDate;
 
-    @ApiModelProperty(hidden = true)
     @JsonIgnore
     @CreatedBy
     private String createBy;
 
-    @ApiModelProperty(hidden = true)
     @JsonIgnore
     @LastModifiedDate
     private Date updatedDate;
 
-    @ApiModelProperty(hidden = true)
     @JsonIgnore
     @LastModifiedBy
     private String updatedBy;

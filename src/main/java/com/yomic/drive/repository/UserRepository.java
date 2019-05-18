@@ -1,7 +1,7 @@
 package com.yomic.drive.repository;
 
 import com.yomic.drive.domain.User;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.yomic.drive.repository.common.BaseRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends BaseRepository<User> {
 }

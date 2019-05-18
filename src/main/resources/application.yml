@@ -11,4 +11,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      max-request-size: 100MB
+      max-file-size: 10MB
+app:
+  path: /Users/zhangyin/IdeaProjects/yomic-drive/files
 

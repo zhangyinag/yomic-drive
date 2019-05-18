@@ -8,10 +8,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.EntityListeners;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -21,10 +18,11 @@ import java.util.Date;
 public class BaseEntity implements Serializable {
 
     /**
-     * 总是选择代理键作为主键，这可能不是一个最好的策略，但这样可以节省构建领域模型的编码
+     * 总是选择代理键作为主键，这可能不是一个最好的策略，但这样可以节省构建领域模型的编码；
+     * 默认采用自增主键
      */
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected Long id;
 
     @JsonIgnore

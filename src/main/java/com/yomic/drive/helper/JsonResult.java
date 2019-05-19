@@ -6,6 +6,10 @@ import lombok.Data;
 @Data
 public class JsonResult<E> {
 
+    public static <T> JsonResult<T> success(T data) {
+        return new JsonResult(data);
+    }
+
     private E data;
 
     private String code;

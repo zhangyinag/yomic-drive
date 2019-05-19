@@ -17,6 +17,8 @@ public class File extends CascadeEntity<File> {
 
     private String name;
 
+    private String contentType;
+
     private Long size;
 
     private String uuid;

@@ -7,11 +7,14 @@ import com.yomic.drive.helper.ContextHelper;
 import com.yomic.drive.repository.FileRepository;
 import com.yomic.drive.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -25,8 +28,8 @@ public class FileServiceImpl implements FileService {
     private FileRepository fileRepository;
 
     @Override
-    public Long saveFile(MultipartFile file, Long id, Long parentId) {
-        File f = toFile(file, id, parentId);
+    public Long saveFile(MultipartFile file, Long parentId) {
+        File f = toFile(file, parentId);
         toStorage(f, file);
         f = fileRepository.saveAndFlush(f);
         return f.getId();
@@ -42,22 +45,72 @@ public class FileServiceImpl implements FileService {
         return file;
     }
 
-    private File toFile(MultipartFile file, Long id, Long parentId) {
+    @Override
+    public List<File> getFiles(Long parentId) {
+        File query = new File();
+        query.setParentId(parentId);
+        return fileRepository.findAll(Example.of(query));
+    }
+
+    @Override
+    public File getFile(Long id) {
+        return fileRepository.findById(id).orElseThrow(() -> new RuntimeException("未找到文件 : [" + id  + "]"));
+    }
+
+    @Override
+    public Long saveDir(String name, Long parentId) {
+        assert name != null;
+        if(parentId != null) {
+            fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件夹 [" + parentId + "]"));
+        }
+        File query = new File();
+        query.setParentId(parentId);
+        query.setName(name);
+        boolean exists = fileRepository.exists(Example.of(query));
+        if(exists) throw new RuntimeException("文件夹名称 [" + name + "] 已存在");
+        File entity = new File();
+        entity.setParentId(parentId);
+        entity.setName(name);
+        entity.setStatus(true);
+        entity.setIsDir(true);
+        entity.setUploadDate(new Date());
+        entity.setModifyDate(new Date());
+        entity.setUploadBy(ContextHelper.getCurrentUsername());
+        entity.setModifyBy(ContextHelper.getCurrentUsername());
+        entity = fileRepository.saveAndFlush(entity);
+        return entity.getId();
+    }
+
+    @Override
+    public Long rename(Long id, String name) {
+        assert id != null;
+        assert name != null;
+        File file = fileRepository.findById(id).orElseThrow(() -> new RuntimeException("未找到文件 [" + id + "]"));
+        file.setName(name);
+        fileRepository.saveAndFlush(file);
+        return file.getId();
+    }
+
+    private File toFile(MultipartFile file, Long parentId) {
         assert file != null;
 
-        File f = null;
-        if(id != null) {
-            f = fileRepository.findById(id).orElse(null);
+        if (parentId != null) {
+            fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件 [" + parentId + "]"));
         }
-        if(f == null) {
-            f = new File();
-        }
+        // 根据文件名判断新增还是更新
+        String filename = file.getOriginalFilename();
+        File queryExists = new File();
+        queryExists.setName(filename);
+        queryExists.setParentId(parentId);
+        List<File> rets = fileRepository.findAll(Example.of(queryExists));
+        File f = CollectionUtils.isEmpty(rets) ? new File() : rets.get(0);
+
         if(parentId != null) {
             File parentFile = fileRepository.findById(parentId).orElse(null);
             if(parentFile != null) f.setParent(parentFile);
         }
 
-        f.setName(file.getOriginalFilename());
+        f.setName(filename);
         f.setSize(file.getSize());
 
         String handler = ContextHelper.getCurrentUsername();
@@ -66,6 +119,7 @@ public class FileServiceImpl implements FileService {
             f.setUploadBy(handler);
             f.setUploadDate(new Date());
             f.setStatus(true);
+            f.setContentType(file.getContentType());
         }
 
         f.setModifyBy(handler);

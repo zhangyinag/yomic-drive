@@ -3,6 +3,7 @@ package com.yomic.drive.web;
 import com.yomic.drive.domain.User;
 import com.yomic.drive.exception.ValidationException;
 import com.yomic.drive.helper.JsonResult;
+import com.yomic.drive.helper.ValidationHelper;
 import com.yomic.drive.model.UserModel;
 import com.yomic.drive.service.UserService;
 import io.swagger.annotations.ApiOperation;
@@ -29,9 +30,7 @@ public class UserController {
     @PostMapping("/users")
     public JsonResult<String> addUser (@Valid UserModel user,
                                      BindingResult result) {
-        if(result.hasErrors()){
-            throw new ValidationException(result.getAllErrors());
-        }
+        ValidationHelper.validate(result);
         userService.addUser(user);
         return new JsonResult<>(user.getUsername());
     }

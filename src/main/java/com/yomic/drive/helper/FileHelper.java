@@ -27,4 +27,14 @@ public class FileHelper {
                 .contentType(MediaType.parseMediaType("application/octet-stream"))
                 .body(new FileSystemResource(file.getRawFile()));
     }
+
+    public static ResponseEntity<FileSystemResource> preview(File file, HttpServletResponse response) {
+        assert file != null;
+        assert file.getRawFile() != null;
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.parseMediaType(file.getContentType()))
+                .body(new FileSystemResource(file.getRawFile()));
+    }
 }

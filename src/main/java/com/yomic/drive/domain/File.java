@@ -42,4 +42,7 @@ public class File extends CascadeEntity<File> {
     @Transient
     @JsonIgnore
     private java.io.File rawFile;
+
+    @Transient
+    private Long authorities;
 }

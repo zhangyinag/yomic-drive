@@ -1,6 +1,7 @@
 package com.yomic.drive.config;
 
 import com.yomic.drive.constant.HttpJsonStatus;
+import com.yomic.drive.domain.User;
 import com.yomic.drive.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +14,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -76,8 +76,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 throw new UsernameNotFoundException("用户名未找到");
             }
             String password = user.getPassword();
-            String[] roles = user.getRoleList().stream().map(role -> role.getRoleCode()).toArray(String[]::new);
-            return User.withUsername(username).password(password).roles(roles).build();
+            return user;
         };
     }
 }

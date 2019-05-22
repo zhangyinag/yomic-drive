@@ -19,4 +19,8 @@ public interface FileService {
     Long saveDir(String name, Long parentId);
 
     Long rename(Long id, String name);
+
+    File getRootFile();
+
+    boolean access(Long userId, Long fileId, Long... bits);
 }

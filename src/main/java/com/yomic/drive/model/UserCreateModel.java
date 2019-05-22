@@ -15,19 +15,20 @@ import java.util.stream.Collectors;
 
 @ApiModel
 @Data
-public class UserModel extends BaseModel<User> {
+public class UserCreateModel extends BaseModel<User> {
 
-    @ApiModelProperty(example = "user")
+    @ApiModelProperty(example = "user", required = true)
     @NotNull
     private String username;
 
     private String ip;
 
-    @ApiModelProperty(example = "普通用户")
+    @ApiModelProperty(example = "普通用户", required = true)
     @NotNull
     private String cname;
 
     @ApiModelProperty(value = "所属机构")
+    @NotNull
     private Long deptId;
 
     @ApiModelProperty(value = "拥有角色", example = "USER")
@@ -36,12 +37,12 @@ public class UserModel extends BaseModel<User> {
 
     @Override
     public User toDomain() {
-        User user = new User();
-        BeanUtils.copyProperties(this, user);
+       User domain = super.toDomain();
         if (roles != null) {
             List<Role> roleList = Arrays.stream(roles).map(s -> new Role(s, "")).collect(Collectors.toList());
-            user.setRoleList(roleList);
+            domain.setRoleList(roleList);
         }
-        return user;
+        domain.setStatus(true);
+        return domain;
     }
 }

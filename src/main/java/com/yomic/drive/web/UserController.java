@@ -1,11 +1,11 @@
 package com.yomic.drive.web;
 
 import com.yomic.drive.domain.User;
-import com.yomic.drive.exception.ValidationException;
 import com.yomic.drive.helper.JsonResult;
 import com.yomic.drive.helper.ValidationHelper;
-import com.yomic.drive.model.UserModel;
+import com.yomic.drive.model.UserCreateModel;
 import com.yomic.drive.service.UserService;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 
+@Api(tags = "用户相关接口")
 @RestController
 public class UserController {
 
@@ -28,11 +29,9 @@ public class UserController {
 
     @ApiOperation("添加用户")
     @PostMapping("/users")
-    public JsonResult<String> addUser (@Valid UserModel user,
-                                     BindingResult result) {
+    public JsonResult<Long> addUser (@Valid @RequestBody UserCreateModel user, BindingResult result) {
         ValidationHelper.validate(result);
-        userService.addUser(user);
-        return new JsonResult<>(user.getUsername());
+        return new JsonResult<>(userService.addUser(user.toDomain()));
     }
 
     @ApiOperation("根据用户名删除用户")

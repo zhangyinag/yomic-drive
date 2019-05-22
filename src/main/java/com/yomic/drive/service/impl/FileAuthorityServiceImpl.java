@@ -14,8 +14,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 @Service
@@ -34,80 +33,112 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
     private DeptRepository deptRepository;
 
 
-//    @Override
+    @Override
     public FileAuthority getFileAuthority(Long sid, Long pid, Boolean principal) {
-        return null;
+        if(principal) return getAuthorityFromUser(sid, pid);
+        return getAuthorityFromDept(sid, pid);
+    }
+
+    @Override
+    public Long addFileAuthority(FileAuthority authority) {
+        FileAuthority exist = find(authority.getSid(), authority.getPid(), authority.getPrincipal()).orElse(null);
+        if(exist != null) fileAuthorityRepository.deleteById(authority.getId());
+        authority = fileAuthorityRepository.saveAndFlush(authority);
+        return authority.getId();
+    }
+
+    @Override
+    public Long updateFileAuthority(Long id, Long authorities, Long inherit) {
+        FileAuthority authority = fileAuthorityRepository.findById(id).orElseThrow(() -> new RuntimeException("not found authority: " + id));
+        authority.setAuthorities(authorities);
+        authority.setInherit(inherit);
+        fileAuthorityRepository.save(authority);
+        return id;
+    }
+
+    @Override
+    public void deleteFileAuthority(Long id) {
+        fileAuthorityRepository.deleteById(id);
     }
 
     private FileAuthority getAuthorityFromUser(Long sid, Long pid) {
-        User user = userRepository.findById(sid).orElse(null);
-        if(user == null) return new FileAuthority();
-        Long authorities = 0l;
-        Long pit = -1l;
-        Long sit = -1l;
-        FileAuthority fileAuthority = getAuthorityFromFile(user.getId(), pid, false);
-        authorities = fileAuthority.getAuthorities() | authorities & pit;
-        pit = fileAuthority.getPit() & pit;
-        sid = fileAuthority.getSid() & sit;
-//        fileAuthority = getAuthorityFromDept()
-        return null;
+        User user = userRepository.findById(sid).orElseThrow(() -> new RuntimeException("not found user: " + sid));
+        FileAuthority baseAuthority = getAuthorityFromFile(sid, pid, true);
+        if(baseAuthority.getImplicit()) return baseAuthority;
+        if(user.getDeptId() != null) {
+            baseAuthority = getAuthorityFromDept(user.getDeptId(), pid);
+        }
+        return baseAuthority;
     }
 
-    private FileAuthority getAuthorityFromDept(Long sid, Long pid, Long sit) {
-        Dept current = deptRepository.findById(sid).orElse(null);
-        if(current == null) return new FileAuthority();
+    private FileAuthority getAuthorityFromDept(Long sid, Long pid) {
+        Dept current = deptRepository.findById(sid).orElseThrow(() -> new RuntimeException("not found dept: " + sid));
         List<Dept> ancestors = new ArrayList<>();
         while(current != null) {
             ancestors.add(current);
             current = current.getParent();
         }
 
-        Long authorities = 0l;
-        Long pit = -1l;
-        sid = sit == null ? -1l : sit;
+        FileAuthority baseAuthority = null;
         for (int i = 0; i < ancestors.size(); i++) {
             Dept s = ancestors.get(i);
-            FileAuthority fileAuthority = getAuthorityFromFile(s.getId(), pid, false);
-            authorities = fileAuthority.getAuthorities() | authorities & pit;
-            pit = fileAuthority.getPit() & pit;
-            sit = fileAuthority.getSid() & sit;
-            if(sit == 0l) break;
+            baseAuthority = getAuthorityFromFile(s.getId(), pid, false);
+            if(baseAuthority.getImplicit()) break;
         }
-        FileAuthority ret = new FileAuthority();
-        ret.setAuthorities(authorities);
-        return ret;
+        return baseAuthority;
     }
 
+    /**
+     * 获取指定 用户（组织）对 指定的文件的权限
+     * @param sid
+     * @param pid
+     * @param principal
+     * @return
+     */
     private FileAuthority getAuthorityFromFile(Long sid, Long pid, Boolean principal) {
-        File current = fileRepository.findById(pid).orElse(null);
-        if(current == null) return new FileAuthority();
+        File current = fileRepository.findById(pid).orElseThrow(() -> new RuntimeException("not found file: " + pid));
         List<File> ancestors = new ArrayList<>();
         while(current != null) {
             ancestors.add(current);
             current = current.getParent();
         }
 
-        Long authorities = 0l;
-        Long pInherit = -1l;
-        Long sInherit = -1l;
+        long baseInherit = -1L;
+        Long authorities = 0L;
+        Long inherit = -1L;
+        Map<Long, Long> inheritMap = new HashMap<>();
+        boolean implicit = false;
         for (int i = 0; i < ancestors.size(); i++) {
             File s = ancestors.get(i);
-            FileAuthority prod = new FileAuthority();
-            prod.setSid(sid);
-            prod.setPid(s.getId());
-            prod.setPrincipal(principal);
-            FileAuthority fileAuthority = fileAuthorityRepository.findOne(Example.of(prod)).orElse(null);
+            FileAuthority fileAuthority = find(sid, s.getId(), principal).orElse(null);
             if(fileAuthority != null){
-                authorities = fileAuthority.getAuthorities() | authorities & pInherit;
-                pInherit = fileAuthority.getPit() & pInherit;
-                sInherit = fileAuthority.getSit() & pInherit;
-                if(pInherit == 0l) break;
+                implicit = true;
+                if(i == 0){
+                    baseInherit = fileAuthority.getInherit();
+                }
+                Long temp = authorities;
+                authorities = fileAuthority.getAuthorities() | authorities & inherit;
+                inherit = fileAuthority.getInherit() & inherit;
+                inheritMap.put(temp ^ authorities, fileAuthority.getId());
+                // 权限已为全部， 不再向上查询
+                if(FileAuthority.hasFullAuthorities(authorities)) break;
+                // 继承关系已全部中断，不再向上查询
+                if(FileAuthority.hasFullBreak(inherit)) break;
             }
         }
         FileAuthority ret = new FileAuthority();
-        ret.setPit(pInherit);
-        ret.setSit(sInherit);
-        ret.setAuthorities(authorities);
+        ret.setAuthorities(authorities); // 层级查找获取的权限
+        ret.setInherit(baseInherit); // 继承关系
+        ret.setImplicit(implicit); // 该用户是否有直接设置该文件及其父级的权限
+        ret.setInheritMap(inheritMap); // 记录权限的继承位置
         return ret;
+    }
+
+    private Optional<FileAuthority> find(Long sid, Long pid, Boolean principal){
+        FileAuthority prod = new FileAuthority();
+        prod.setSid(sid);
+        prod.setPid(pid);
+        prod.setPrincipal(principal);
+        return fileAuthorityRepository.findOne(Example.of(prod));
     }
 }

@@ -1,6 +1,6 @@
 package com.yomic.drive.model;
 
-import com.yomic.drive.domain.File;
+import com.yomic.drive.domain.Dept;
 import com.yomic.drive.model.common.BaseModel;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -11,7 +11,7 @@ import javax.validation.constraints.NotNull;
 
 @ApiModel
 @Data
-public class DirCreateModel extends BaseModel<File> {
+public class DeptCreateModel extends BaseModel<Dept> {
 
     @ApiModelProperty(required = true)
     @NotNull
@@ -21,12 +21,4 @@ public class DirCreateModel extends BaseModel<File> {
     @ApiModelProperty(required = true)
     @NotNull
     private Long parentId;
-
-    @Override
-    public File toDomain() {
-        File domain = super.toDomain();
-        domain.setStatus(true);
-        domain.setIsDir(true);
-        return domain;
-    }
 }

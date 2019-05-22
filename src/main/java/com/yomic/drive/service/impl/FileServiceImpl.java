@@ -3,19 +3,25 @@ package com.yomic.drive.service.impl;
 import ch.qos.logback.core.util.FileUtil;
 import com.yomic.drive.config.AppProperties;
 import com.yomic.drive.domain.File;
+import com.yomic.drive.domain.FileAuthority;
+import com.yomic.drive.domain.User;
 import com.yomic.drive.helper.ContextHelper;
+import com.yomic.drive.helper.ExceptionHelper;
 import com.yomic.drive.repository.FileRepository;
+import com.yomic.drive.repository.UserRepository;
+import com.yomic.drive.service.FileAuthorityService;
 import com.yomic.drive.service.FileService;
+import com.yomic.drive.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -27,8 +33,20 @@ public class FileServiceImpl implements FileService {
     @Autowired
     private FileRepository fileRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private FileAuthorityService fileAuthorityService;
+
     @Override
     public Long saveFile(MultipartFile file, Long parentId) {
+        assert file != null;
+        assert parentId != null;
+        access(ContextHelper.getCurrentUserId(), parentId, FileAuthority.NEW);
         File f = toFile(file, parentId);
         toStorage(f, file);
         f = fileRepository.saveAndFlush(f);
@@ -37,8 +55,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public File downloadFile(Long id) {
-        File file = fileRepository.findById(id).orElse(null);
-        if (file == null || file.getUuid() == null) throw new RuntimeException("未找到文件 [ ID : " + id + "]");
+        File file = fileRepository.findById(id).orElseThrow(ExceptionHelper.optionalThrow("not found file: " + id));
+        if(file.getIsDir()) throw new RuntimeException("couldn't download dir");
+        if(file.getUuid() == null) throw new RuntimeException("file: " + id + "haven't real file");
         java.io.File storeFile = fromStorage(file.getUuid());
         if(storeFile == null) throw new RuntimeException("文件已丢失");
         file.setRawFile(storeFile);
@@ -47,14 +66,29 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public List<File> getFiles(Long parentId) {
-        File query = new File();
-        query.setParentId(parentId);
-        return fileRepository.findAll(Example.of(query));
+        List<File> fileList = Collections.emptyList();
+        if(parentId == null){// 根目录
+            fileList = new ArrayList<>();
+            fileList.add(getRootFile());
+        }else{
+            File query = new File();
+            query.setParentId(parentId);
+            query.setStatus(true);
+            fileList = fileRepository.findAll(Example.of(query));
+        }
+        for(int i = 0; i<fileList.size(); i++) {
+            preHandle(fileList.get(i));
+        }
+        return fileList.stream()
+                .filter(s -> access(ContextHelper.getCurrentUserId(), s.getId(), FileAuthority.VISIBLE))
+                .collect(Collectors.toList());
     }
 
     @Override
     public File getFile(Long id) {
-        return fileRepository.findById(id).orElseThrow(() -> new RuntimeException("未找到文件 : [" + id  + "]"));
+        File file = fileRepository.findById(id).orElseThrow(() -> new RuntimeException("未找到文件 : [" + id  + "]"));
+        this.preHandle(file);
+        return file;
     }
 
     @Override
@@ -89,6 +123,26 @@ public class FileServiceImpl implements FileService {
         file.setName(name);
         fileRepository.saveAndFlush(file);
         return file.getId();
+    }
+
+    @Override
+    public File getRootFile() {
+        return fileRepository.findFileByParentIsNullAndStatusIsTrue();
+    }
+
+    @Override
+    public boolean access(Long userId, Long fileId, Long... bits) {
+        assert userId != null;
+        assert fileId != null;
+        User user = userRepository.findById(userId).orElseThrow(ExceptionHelper.optionalThrow("not found user: " + userId));
+        if(user.isSuper()) return true;
+        if(user.isAdmin()) {
+            // TODO 文件管理员是否有该文件的管理权限
+            return true;
+        }
+        Long authorities = fileAuthorityService.getFileAuthority(userId, fileId, true).getAuthorities();
+        if(FileAuthority.hasAuthorities(authorities, bits)) return true;
+        return false;
     }
 
     private File toFile(MultipartFile file, Long parentId) {
@@ -153,4 +207,18 @@ public class FileServiceImpl implements FileService {
         String path = appProperties.getPath();
         return new java.io.File(path, uuid);
     }
+
+    /**
+     * 返回前预处理
+     * @param file
+     */
+    private void preHandle(File file) {
+        assert file != null;
+        assert file.getId() != null;
+        Long userId = ContextHelper.getCurrentUser().getId();
+        FileAuthority authority = fileAuthorityService.getFileAuthority(userId, file.getId(), true);
+        file.addAuthority(authority);
+        file.setChildren(null);
+    }
+
 }

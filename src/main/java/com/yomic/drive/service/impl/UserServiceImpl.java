@@ -1,10 +1,9 @@
 package com.yomic.drive.service.impl;
 
 import com.yomic.drive.domain.User;
-import com.yomic.drive.model.UserModel;
+import com.yomic.drive.model.UserCreateModel;
 import com.yomic.drive.repository.UserRepository;
 import com.yomic.drive.service.UserService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -31,15 +30,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User addUser(UserModel userModel) {
-        User user = userModel.toDomain();
-        user.setStatus(true);
+    public Long addUser(User user) {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        String encodedPassword = passwordEncoder.encode("123456");
+        String encodedPassword = "{bcrypt}" + passwordEncoder.encode("123456");
         user.setPassword(encodedPassword);
-        User newUser = userRepository.saveAndFlush(user);
-        if (newUser != null) newUser = userRepository.findById(newUser.getId()).get();
-        return newUser;
+        return userRepository.save(user).getId();
     }
 
     @Override

@@ -54,7 +54,7 @@ public class File extends CascadeEntity<File> {
     private Map<Long, Long> inheritMap;
 
     public void addAuthority(FileAuthority authority){
-        this.setAuthorities(authority.getAuthorities());
+        this.setAuthorities(authority.getImplicitAuthorities());
         this.setInherit(authority.getInherit());
         this.setInheritMap(authority.getInheritMap());
     }

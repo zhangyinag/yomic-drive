@@ -22,6 +22,8 @@ public class FileAuthority extends BaseEntity {
     public static final Long DOWNLOAD           = 0b1000000L;    // 下载
     public static final Long LINK               = 0b10000000L;    // 外链
 
+    private static final Long BITS = 0b1111_1111L;
+
     public static boolean hasAuthorities(Long authorities, Long... bits) {
         Long sum = 0L;
         for(int i = 0; i < bits.length; i++) {
@@ -31,11 +33,17 @@ public class FileAuthority extends BaseEntity {
     }
 
     public static boolean hasFullAuthorities(Long authorities) {
-        return authorities == -1L;
+        return (authorities & FileAuthority.BITS) == FileAuthority.BITS;
     }
 
     public static boolean hasFullBreak(Long inherit) {
-        return inherit == 0L;
+        return (inherit & FileAuthority.BITS) == 0L;
+    }
+
+    public static boolean hasInheritAll(Long authorities, Long inherit) {
+        return FileAuthority.hasFullAuthorities(authorities) ||
+                FileAuthority.hasFullBreak(inherit) ||
+                FileAuthority.hasFullAuthorities((authorities | (~inherit)));
     }
 
     private Long sid;
@@ -48,8 +56,13 @@ public class FileAuthority extends BaseEntity {
 
     private Boolean principal;
 
+    // 通过继承计算出来的权限(特定sid 与 pid), 向上搜索会不停变化， 这里不记录sid 与 pid 位置
     @Transient
-    private Boolean implicit;
+    private Long implicitAuthorities;
+
+    // 通过继承计算出来的继承规则(特定sid 与 pid), 向上搜索会不停变化， 这里不记录sid 与 pid 位置
+    @Transient
+    private Long implicitInherit;
 
     @Transient
     private Map<Long, Long> inheritMap = new HashMap<>();
@@ -63,6 +76,16 @@ public class FileAuthority extends BaseEntity {
         return inherit == null ? -1L : inherit;
     }
 
+    public boolean hasFullAuthorities() {
+        return FileAuthority.hasFullAuthorities(this.getAuthorities());
+    }
 
+    public boolean hasFullBreak() {
+        return FileAuthority.hasFullBreak(this.getInherit());
+    }
+
+    public boolean hasInheritAll() {
+        return FileAuthority.hasInheritAll(this.getImplicitAuthorities(), this.getImplicitInherit());
+    }
 }
 

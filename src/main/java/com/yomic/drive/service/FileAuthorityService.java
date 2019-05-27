@@ -12,4 +12,6 @@ public interface FileAuthorityService {
     Long updateFileAuthority(Long id, Long authorities, Long inherit);
 
     void deleteFileAuthority(Long id);
+
+    Long getAuthorities(Long sid, Long pid, Boolean principal);
 }

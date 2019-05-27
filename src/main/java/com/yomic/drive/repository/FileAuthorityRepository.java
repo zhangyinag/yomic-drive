@@ -4,5 +4,5 @@ import com.yomic.drive.domain.FileAuthority;
 import com.yomic.drive.repository.common.BaseRepository;
 
 public interface FileAuthorityRepository extends BaseRepository<FileAuthority> {
-
+    FileAuthority findFileAuthorityBySidAndPidAndPrincipal(Long sid, Long pid, boolean principle);
 }

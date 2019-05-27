@@ -14,7 +14,6 @@ import com.yomic.drive.service.FileService;
 import com.yomic.drive.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -134,13 +133,15 @@ public class FileServiceImpl implements FileService {
     public boolean access(Long userId, Long fileId, Long... bits) {
         assert userId != null;
         assert fileId != null;
-        User user = userRepository.findById(userId).orElseThrow(ExceptionHelper.optionalThrow("not found user: " + userId));
+        User user = null;
+        if(userId.equals(ContextHelper.getCurrentUserId())) user = ContextHelper.getCurrentUser();
+        else user = userRepository.findById(userId).orElseThrow(ExceptionHelper.optionalThrow("not found user: " + userId));
         if(user.isSuper()) return true;
         if(user.isAdmin()) {
             // TODO 文件管理员是否有该文件的管理权限
             return true;
         }
-        Long authorities = fileAuthorityService.getFileAuthority(userId, fileId, true).getAuthorities();
+        Long authorities = fileAuthorityService.getAuthorities(userId, fileId, true);
         if(FileAuthority.hasAuthorities(authorities, bits)) return true;
         return false;
     }
@@ -216,8 +217,8 @@ public class FileServiceImpl implements FileService {
         assert file != null;
         assert file.getId() != null;
         Long userId = ContextHelper.getCurrentUser().getId();
-        FileAuthority authority = fileAuthorityService.getFileAuthority(userId, file.getId(), true);
-        file.addAuthority(authority);
+        Long authorities = fileAuthorityService.getAuthorities(userId, file.getId(), true);
+        file.setAuthorities(authorities);
         file.setChildren(null);
     }
 

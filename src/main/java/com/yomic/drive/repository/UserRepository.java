@@ -4,4 +4,5 @@ import com.yomic.drive.domain.User;
 import com.yomic.drive.repository.common.BaseRepository;
 
 public interface UserRepository extends BaseRepository<User> {
+    User findUserByUsername(String username);
 }

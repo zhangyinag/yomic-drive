@@ -47,17 +47,6 @@ public class File extends CascadeEntity<File> {
     @Transient
     private Long authorities;
 
-    @Transient
-    private Long inherit;
-
-    @Transient
-    private Map<Long, Long> inheritMap;
-
-    public void addAuthority(FileAuthority authority){
-        this.setAuthorities(authority.getImplicitAuthorities());
-        this.setInherit(authority.getInherit());
-        this.setInheritMap(authority.getInheritMap());
-    }
 
     public boolean hasAuthorities(Long... bits) {
        return FileAuthority.hasAuthorities(this.authorities, bits);

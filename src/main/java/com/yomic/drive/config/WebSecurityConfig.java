@@ -64,7 +64,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
             .and().exceptionHandling()
                 .accessDeniedHandler(handler)
                 .authenticationEntryPoint(handler)
-            .and().csrf().disable();
+            .and().csrf().disable()
+            .cors();
     }
 
     @Override

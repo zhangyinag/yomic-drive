@@ -34,9 +34,14 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
 
 
     @Override
+    public Long getAuthorities(Long sid, Long pid, Boolean principal) {
+        if(principal) return getAuthoritiesFromUser(sid, pid);
+        return getAuthoritiesFromDept(sid, pid);
+    }
+
+    @Override
     public FileAuthority getFileAuthority(Long sid, Long pid, Boolean principal) {
-        if(principal) return getAuthorityFromUser(sid, pid);
-        return getAuthorityFromDept(sid, pid, null, null);
+        return fileAuthorityRepository.findFileAuthorityBySidAndPidAndPrincipal(sid, pid, principal);
     }
 
     @Override
@@ -51,7 +56,6 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
     public Long updateFileAuthority(Long id, Long authorities, Long inherit) {
         FileAuthority authority = fileAuthorityRepository.findById(id).orElseThrow(() -> new RuntimeException("not found authority: " + id));
         authority.setAuthorities(authorities);
-        authority.setInherit(inherit);
         fileAuthorityRepository.save(authority);
         return id;
     }
@@ -61,19 +65,18 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
         fileAuthorityRepository.deleteById(id);
     }
 
-    private FileAuthority getAuthorityFromUser(Long sid, Long pid) {
+    private Long getAuthoritiesFromUser(Long sid, Long pid) {
         User user = userRepository.findById(sid).orElseThrow(() -> new RuntimeException("not found user: " + sid));
-        FileAuthority authority = getAuthorityFromFile(sid, pid, true, null, null);
-        if(authority.hasInheritAll()) return authority;
+        Long authorities = getAuthoritiesFromFile(sid, pid, true);
+        if(authorities != null) return authorities;
         if(user.getDeptId() != null) {
-            FileAuthority temp = getAuthorityFromDept(user.getDeptId(), pid, authority.getImplicitAuthorities(), authority.getImplicitInherit());
-            authority.setImplicitInherit(temp.getImplicitInherit());
-            authority.setImplicitAuthorities(temp.getImplicitAuthorities());
+            authorities = getAuthoritiesFromDept(user.getDeptId(), pid);
+            if(authorities != null) return authorities;
         }
-        return authority;
+        return authorities;
     }
 
-    private FileAuthority getAuthorityFromDept(Long sid, Long pid, Long baseAuthorities, Long baseInherit) {
+    private Long getAuthoritiesFromDept(Long sid, Long pid) {
         Dept current = deptRepository.findById(sid).orElseThrow(() -> new RuntimeException("not found dept: " + sid));
         List<Dept> ancestors = new ArrayList<>();
         while(current != null) {
@@ -81,20 +84,13 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
             current = current.getParent();
         }
 
-        FileAuthority authority = null;
+        Long authorities = null;
         for (int i = 0; i < ancestors.size(); i++) {
             Dept s = ancestors.get(i);
-            Long authorities = authority == null ? baseAuthorities : authority.getImplicitAuthorities();
-            Long inherit = authority == null ? baseInherit : authority.getImplicitInherit();
-            FileAuthority temp = getAuthorityFromFile(s.getId(), pid, false, authorities, inherit);
-            if(authority == null) authority = temp;
-            else{
-                authority.setImplicitInherit(temp.getImplicitInherit());
-                authority.setAuthorities(temp.getImplicitAuthorities());
-            }
-            if(authority.hasInheritAll()) break;
+            authorities = getAuthoritiesFromFile(s.getId(), pid, false);
+            if(authorities != null) break;
         }
-        return authority;
+        return authorities;
     }
 
     /**
@@ -104,38 +100,23 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
      * @param principal
      * @return
      */
-    private FileAuthority getAuthorityFromFile(Long sid, Long pid, Boolean principal, Long baseAuthorities, Long baseInherit) {
+    private Long getAuthoritiesFromFile(Long sid, Long pid, Boolean principal) {
         File current = fileRepository.findById(pid).orElseThrow(() -> new RuntimeException("not found file: " + pid));
         List<File> ancestors = new ArrayList<>();
         while(current != null && current.getStatus()) {
             ancestors.add(current);
             current = current.getParent();
         }
-
-        Long authorities = baseAuthorities == null ? 0L : baseAuthorities;
-        Long inherit = baseInherit == null ? -1L : baseInherit;
-        Map<Long, Long> inheritMap = new HashMap<>();
-        FileAuthority ret = new FileAuthority();
+        Long authorities = null;
         for (int i = 0; i < ancestors.size(); i++) {
             File s = ancestors.get(i);
             FileAuthority fileAuthority = find(sid, s.getId(), principal).orElse(null);
             if(fileAuthority != null){
-                if(fileAuthority.getSid() == sid && fileAuthority.getPid() == pid){
-                    ret.setAuthorities(fileAuthority.getAuthorities());
-                    ret.setInherit(fileAuthority.getInherit());
-                }
-                Long temp = authorities;
-                authorities = fileAuthority.getAuthorities() | authorities & inherit;
-                inherit = fileAuthority.getInherit() & inherit;
-                inheritMap.put(temp ^ authorities, fileAuthority.getId());
-                // 已完成继承 无需向上查找
-                if(FileAuthority.hasInheritAll(authorities, inherit)) break;
+                authorities = fileAuthority.getAuthorities();
+                break;
             }
         }
-        ret.setImplicitAuthorities(authorities);
-        ret.setImplicitInherit(inherit);
-        ret.setInheritMap(inheritMap); // 记录权限的继承位置
-        return ret;
+        return authorities;
     }
 
     private Optional<FileAuthority> find(Long sid, Long pid, Boolean principal){

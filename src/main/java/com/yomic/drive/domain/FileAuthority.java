@@ -25,6 +25,7 @@ public class FileAuthority extends BaseEntity {
     private static final Long BITS = 0b1111_1111L;
 
     public static boolean hasAuthorities(Long authorities, Long... bits) {
+        if (authorities == null) authorities = 0L;
         Long sum = 0L;
         for(int i = 0; i < bits.length; i++) {
             sum = sum | bits[i];
@@ -36,15 +37,6 @@ public class FileAuthority extends BaseEntity {
         return (authorities & FileAuthority.BITS) == FileAuthority.BITS;
     }
 
-    public static boolean hasFullBreak(Long inherit) {
-        return (inherit & FileAuthority.BITS) == 0L;
-    }
-
-    public static boolean hasInheritAll(Long authorities, Long inherit) {
-        return FileAuthority.hasFullAuthorities(authorities) ||
-                FileAuthority.hasFullBreak(inherit) ||
-                FileAuthority.hasFullAuthorities((authorities | (~inherit)));
-    }
 
     private Long sid;
 
@@ -52,40 +44,15 @@ public class FileAuthority extends BaseEntity {
 
     private Long authorities;
 
-    private Long inherit;
-
     private Boolean principal;
-
-    // 通过继承计算出来的权限(特定sid 与 pid), 向上搜索会不停变化， 这里不记录sid 与 pid 位置
-    @Transient
-    private Long implicitAuthorities;
-
-    // 通过继承计算出来的继承规则(特定sid 与 pid), 向上搜索会不停变化， 这里不记录sid 与 pid 位置
-    @Transient
-    private Long implicitInherit;
-
-    @Transient
-    private Map<Long, Long> inheritMap = new HashMap<>();
-
 
     public Long getAuthorities(){
         return authorities == null ? 0L : authorities;
     }
 
-    public Long getInherit() {
-        return inherit == null ? -1L : inherit;
-    }
 
     public boolean hasFullAuthorities() {
         return FileAuthority.hasFullAuthorities(this.getAuthorities());
-    }
-
-    public boolean hasFullBreak() {
-        return FileAuthority.hasFullBreak(this.getInherit());
-    }
-
-    public boolean hasInheritAll() {
-        return FileAuthority.hasInheritAll(this.getImplicitAuthorities(), this.getImplicitInherit());
     }
 }
 

@@ -30,8 +30,8 @@ public class FileController {
 
     @ApiOperation("获取文件列表")
     @GetMapping("/files")
-    public JsonResult<List<File>> getFiles (Long parentId) {
-        return JsonResult.success(fileService.getFiles(parentId));
+    public JsonResult<List<File>> getFiles (Long parentId, Boolean isDir) {
+        return JsonResult.success(fileService.getFiles(parentId, isDir));
     }
 
     @ApiOperation("根据ID获取文件")

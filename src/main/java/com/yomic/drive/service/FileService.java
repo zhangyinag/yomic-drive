@@ -12,7 +12,7 @@ public interface FileService {
 
     File downloadFile(Long id);
 
-    List<File> getFiles(Long parentId);
+    List<File> getFiles(Long parentId, Boolean isDir);
 
     File getFile(Long id);
 

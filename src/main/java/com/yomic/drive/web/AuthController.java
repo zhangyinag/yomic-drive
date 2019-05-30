@@ -1,11 +1,14 @@
 package com.yomic.drive.web;
 
+import com.yomic.drive.domain.User;
+import com.yomic.drive.helper.ContextHelper;
 import com.yomic.drive.helper.JsonResult;
 import com.yomic.drive.constant.HttpJsonStatus;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,5 +40,11 @@ public class AuthController {
     @PostMapping("/logout")
     public JsonResult logout () {
         return new JsonResult(HttpJsonStatus.SUCCESS);
+    }
+
+    @ApiOperation("获取登录用户信息")
+    @GetMapping("/auth")
+    public JsonResult<User> getUser () {
+        return JsonResult.success(ContextHelper.getCurrentUser());
     }
 }

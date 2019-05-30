@@ -5,6 +5,7 @@ import com.yomic.drive.config.AppProperties;
 import com.yomic.drive.domain.File;
 import com.yomic.drive.domain.FileAuthority;
 import com.yomic.drive.domain.User;
+import com.yomic.drive.helper.AssertHelper;
 import com.yomic.drive.helper.ContextHelper;
 import com.yomic.drive.helper.ExceptionHelper;
 import com.yomic.drive.repository.FileRepository;
@@ -43,8 +44,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public Long saveFile(MultipartFile file, Long parentId) {
-        assert file != null;
-        assert parentId != null;
+        AssertHelper.assertNotNull(file, parentId);
         access(ContextHelper.getCurrentUserId(), parentId, FileAuthority.NEW);
         File f = toFile(file, parentId);
         toStorage(f, file);
@@ -64,16 +64,14 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public List<File> getFiles(Long parentId) {
+    public List<File> getFiles(Long parentId,  Boolean isDir) {
         List<File> fileList = Collections.emptyList();
         if(parentId == null){// 根目录
             fileList = new ArrayList<>();
             fileList.add(getRootFile());
         }else{
-            File query = new File();
-            query.setParentId(parentId);
-            query.setStatus(true);
-            fileList = fileRepository.findAll(Example.of(query));
+            if(isDir == null) fileList = fileRepository.findFilesByParentAndStatusIsTrue(File.forParent(parentId));
+            else fileList = fileRepository.findFilesByParentAndIsDirAndStatusIsTrue(File.forParent(parentId), isDir);
         }
         for(int i = 0; i<fileList.size(); i++) {
             preHandle(fileList.get(i));

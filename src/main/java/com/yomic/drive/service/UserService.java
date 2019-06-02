@@ -6,7 +6,7 @@ import com.yomic.drive.model.UserCreateModel;
 import java.util.List;
 
 public interface UserService {
-    List<User> getUserList();
+    List<User> getUserList(Long deptId);
 
     User getUserByUsername (String username);
 

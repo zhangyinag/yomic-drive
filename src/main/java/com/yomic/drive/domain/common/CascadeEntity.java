@@ -1,6 +1,7 @@
 package com.yomic.drive.domain.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yomic.drive.domain.File;
 import lombok.Data;
 
 import javax.persistence.*;

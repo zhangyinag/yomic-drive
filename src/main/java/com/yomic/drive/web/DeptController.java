@@ -19,15 +19,21 @@ import java.util.List;
 
 @Api(tags = "部门相关接口")
 @RestController
-public class EmpController {
+public class DeptController {
 
     @Autowired
     private DeptService deptService;
 
     @ApiOperation("获取部门列表")
     @GetMapping("/depts")
-    public JsonResult<List<Dept>> getDepts() {
-        return new JsonResult<>(deptService.getDeptList());
+    public JsonResult<List<Dept>> getDepts(Long parentId) {
+        return new JsonResult<>(deptService.getDeptList(parentId));
+    }
+
+    @ApiOperation("根据ID获取部门")
+    @GetMapping("/depts/{id}")
+    public JsonResult<Dept> getDept(@PathVariable Long id) {
+        return new JsonResult<>(deptService.getDept(id));
     }
 
     @ApiOperation("添加部门")

@@ -4,6 +4,7 @@ import com.yomic.drive.domain.Dept;
 import com.yomic.drive.domain.File;
 import com.yomic.drive.domain.FileAuthority;
 import com.yomic.drive.domain.User;
+import com.yomic.drive.helper.ContextHelper;
 import com.yomic.drive.repository.DeptRepository;
 import com.yomic.drive.repository.FileAuthorityRepository;
 import com.yomic.drive.repository.FileRepository;
@@ -35,6 +36,9 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
 
     @Override
     public Long getAuthorities(Long sid, Long pid, Boolean principal) {
+        if (ContextHelper.getCurrentUser().isSuper()) {
+            return -1L;
+        }
         if(principal) return getAuthoritiesFromUser(sid, pid);
         return getAuthoritiesFromDept(sid, pid);
     }

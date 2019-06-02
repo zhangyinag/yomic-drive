@@ -1,6 +1,8 @@
 package com.yomic.drive.service.impl;
 
 import com.yomic.drive.domain.Dept;
+import com.yomic.drive.helper.AssertHelper;
+import com.yomic.drive.helper.ExceptionHelper;
 import com.yomic.drive.repository.DeptRepository;
 import com.yomic.drive.service.DeptService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +18,14 @@ public class DeptServiceImpl implements DeptService {
     private DeptRepository deptRepository;
 
     @Override
-    public List<Dept> getDeptList() {
-        return deptRepository.findAll();
+    public List<Dept> getDeptList(Long parentId) {
+        Dept parent = null;
+        if(parentId != null) {
+            parent = deptRepository.findById(parentId)
+                    .orElseThrow(ExceptionHelper.optionalThrow("未找到父级部门: " + parentId));
+        }
+        if (parent == null) return deptRepository.findDeptsByParentIsNull();
+        return deptRepository.findDeptsByParent(parent);
     }
 
     @Override
@@ -28,5 +36,16 @@ public class DeptServiceImpl implements DeptService {
     @Override
     public void deleteDeptById(Long id) {
         deptRepository.deleteById(id);
+    }
+
+    @Override
+    public Dept getRootDept() {
+        return deptRepository.findDeptsByParentIsNull().get(0);
+    }
+
+    @Override
+    public Dept getDept(Long id) {
+        AssertHelper.assertNotNull(id);
+        return deptRepository.findById(id).orElse(null);
     }
 }

@@ -23,8 +23,8 @@ public class UserController {
 
     @ApiOperation("获取用户列表")
     @GetMapping("/users")
-    public JsonResult<List<User>> getUsers () {
-        return new JsonResult<>(userService.getUserList());
+    public JsonResult<List<User>> getUsers (Long deptId) {
+        return new JsonResult<>(userService.getUserList(deptId));
     }
 
     @ApiOperation("添加用户")

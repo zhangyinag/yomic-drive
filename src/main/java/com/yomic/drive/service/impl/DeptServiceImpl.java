@@ -48,4 +48,15 @@ public class DeptServiceImpl implements DeptService {
         AssertHelper.assertNotNull(id);
         return deptRepository.findById(id).orElse(null);
     }
+
+    @Override
+    public Dept updateDept(Dept dept) {
+        AssertHelper.assertNotNull(dept);
+        AssertHelper.assertNotNull(dept.getId());
+        Dept oldDept = deptRepository.findById(dept.getId())
+                .orElseThrow(ExceptionHelper.optionalThrow("更新失败, 未找到部门：" + dept.getId()));
+        oldDept.setName(dept.getName());
+        deptRepository.save(oldDept);
+        return oldDept;
+    }
 }

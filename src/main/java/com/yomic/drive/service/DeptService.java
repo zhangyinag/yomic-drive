@@ -14,4 +14,6 @@ public interface DeptService {
     Dept getRootDept ();
 
     Dept getDept (Long id);
+
+    Dept updateDept (Dept dept);
 }

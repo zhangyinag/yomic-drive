@@ -20,7 +20,9 @@ public interface FileService {
 
     Long rename(Long id, String name);
 
-    File getRootFile();
-
     boolean access(Long userId, Long fileId, Long... bits);
+
+    List<File> getFilesForAuthority(Long parentId, Boolean isDir);
+
+    File createUserDir (String username);
 }

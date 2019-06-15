@@ -37,7 +37,6 @@ public class User extends BaseEntity implements UserDetails {
     /**
      * 联合主键在MySQL中有长度限制，所以对两个字段的长度做了限制
      */
-    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JoinTable(name = "user_role",
             joinColumns = @JoinColumn(name = "username", referencedColumnName = "username", nullable = false),
@@ -49,6 +48,14 @@ public class User extends BaseEntity implements UserDetails {
     @ManyToOne(fetch = FetchType.LAZY)
     @NotFound(action = NotFoundAction.IGNORE)
     private Dept dept;
+
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+    @JoinTable(name = "user_file",
+            joinColumns = @JoinColumn(name = "userId", referencedColumnName = "id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "fileId", referencedColumnName = "id", nullable = false),
+            uniqueConstraints = {@UniqueConstraint(columnNames={"userId", "fileId"})})
+    private List<File> fileList;
 
     public Long getDeptId () {
         return dept != null ? dept.getId() : null;
@@ -110,5 +117,18 @@ public class User extends BaseEntity implements UserDetails {
 
     public boolean isAdmin(){
         return getAuthorities().stream().anyMatch(s -> ((GrantedAuthority) s).getAuthority().equals(Role.ROLE_ADMIN));
+    }
+
+    @Transient
+    public List<File> getFiles () {
+        List<File> ret = new ArrayList<>();
+        if (getFileList() == null) return ret;
+        for (File f: getFileList()){
+            File item = new File();
+            item.setName(f.getName());
+            item.setId(f.getId());
+            ret.add(item);
+        }
+        return ret;
     }
 }

@@ -68,7 +68,10 @@ public class FileServiceImpl implements FileService {
         List<File> fileList = Collections.emptyList();
         if(parentId == null){// 根目录
             fileList = new ArrayList<>();
-            fileList.add(getRootFile());
+            List<File> publicFiles = fileRepository.findFilesByParentIsNullAndStatusIsTrueAndShareIsTrueAndIsDir(isDir);
+            File privateFile = createUserDir(ContextHelper.getCurrentUsername());
+            fileList.add(privateFile);
+            fileList.addAll(publicFiles);
         }else{
             if(isDir == null) fileList = fileRepository.findFilesByParentAndStatusIsTrue(File.forParent(parentId));
             else fileList = fileRepository.findFilesByParentAndIsDirAndStatusIsTrue(File.forParent(parentId), isDir);
@@ -123,11 +126,6 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public File getRootFile() {
-        return fileRepository.findFileByParentIsNullAndStatusIsTrue();
-    }
-
-    @Override
     public boolean access(Long userId, Long fileId, Long... bits) {
         assert userId != null;
         assert fileId != null;
@@ -142,6 +140,47 @@ public class FileServiceImpl implements FileService {
         Long authorities = fileAuthorityService.getAuthorities(userId, fileId, true);
         if(FileAuthority.hasAuthorities(authorities, bits)) return true;
         return false;
+    }
+
+    @Override
+    public List<File> getFilesForAuthority(Long parentId, Boolean isDir) {
+        List<File> fileList = new ArrayList<>();
+        User user = ContextHelper.getCurrentUser();
+        if(parentId == null){// 根目录
+            if (user.isSuper()) {
+                fileList.addAll(fileRepository.findFilesByParentIsNullAndStatusIsTrueAndShareIsTrueAndIsDir(isDir));
+            } else if (user.isAdmin()){
+                fileList = user.getFileList();
+            }
+        }else{
+            if(isDir == null) fileList = fileRepository.findFilesByParentAndStatusIsTrue(File.forParent(parentId));
+            else fileList = fileRepository.findFilesByParentAndIsDirAndStatusIsTrue(File.forParent(parentId), isDir);
+        }
+//        for(int i = 0; i<fileList.size(); i++) {
+//            preHandle(fileList.get(i));
+//        }
+//        return fileList.stream()
+//                .filter(s -> access(ContextHelper.getCurrentUserId(), s.getId(), FileAuthority.VISIBLE))
+//                .collect(Collectors.toList());
+        return fileList;
+    }
+
+    @Override
+    public File createUserDir(String username) {
+        File file = fileRepository.findFileByShareIsFalseAndParentIsNullAndUploadBy(username);
+        if (file != null) return file;
+        file = new File();
+//        file.setParentId(parentId);
+        file.setName("个人文件夹");
+        file.setStatus(true);
+        file.setIsDir(true);
+        file.setUploadDate(new Date());
+        file.setModifyDate(new Date());
+        file.setUploadBy(username);
+        file.setModifyBy(username);
+        file.setAuthorities(-1L);
+        file = fileRepository.saveAndFlush(file);
+        return file;
     }
 
     private File toFile(MultipartFile file, Long parentId) {

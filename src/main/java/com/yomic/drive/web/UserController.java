@@ -34,10 +34,10 @@ public class UserController {
         return new JsonResult<>(userService.addUser(user.toDomain()));
     }
 
-    @ApiOperation("根据用户名删除用户")
-    @DeleteMapping("/users/{username}")
-    public JsonResult deleteUserByUsername (@PathVariable String username) {
-        userService.deleteUserByUsername(username);
+    @ApiOperation("根据用户id删除用户")
+    @DeleteMapping("/users/{id}")
+    public JsonResult deleteUserByUsername (@PathVariable Long id) {
+        userService.deleteUser(id);
         return new JsonResult();
     }
 }

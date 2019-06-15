@@ -19,8 +19,8 @@ public class GlobalExceptionConfig {
     public JsonResult<Object> exceptionHandler(HttpServletRequest request, Exception exception) throws Exception {
         log.error(exception.getMessage(), exception);
         if (exception instanceof ValidationException) {
-            return new JsonResult<>(HttpJsonStatus.VALID_FAIL,null, ((ValidationException) exception).getErrors());
+            return new JsonResult<>(HttpJsonStatus.VALID_FAIL,exception.getMessage(), ((ValidationException) exception).getErrors());
         }
-        return new JsonResult<>(HttpJsonStatus.EXCEPTION,null, exception.getMessage());
+        return new JsonResult<>(HttpJsonStatus.EXCEPTION,exception.getMessage(), exception.getMessage());
     }
 }

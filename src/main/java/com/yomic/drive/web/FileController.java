@@ -34,6 +34,12 @@ public class FileController {
         return JsonResult.success(fileService.getFiles(parentId, isDir));
     }
 
+    @ApiOperation("获取管理文件列表")
+    @GetMapping("/files/admin")
+    public JsonResult<List<File>> getAdminFiles (Long parentId, Boolean isDir) {
+        return JsonResult.success(fileService.getFilesForAuthority(parentId, isDir));
+    }
+
     @ApiOperation("根据ID获取文件")
     @GetMapping("/files/{id}")
     public JsonResult<File> getFile (@PathVariable Long id) {

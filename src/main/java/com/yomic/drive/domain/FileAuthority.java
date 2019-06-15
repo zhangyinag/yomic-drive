@@ -1,5 +1,6 @@
 package com.yomic.drive.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yomic.drive.domain.common.BaseEntity;
 import lombok.Data;
 
@@ -46,6 +47,18 @@ public class FileAuthority extends BaseEntity {
 
     private Boolean principal;
 
+    @Transient
+    @JsonIgnore
+    private File file;
+
+    @Transient
+    @JsonIgnore
+    private User user;
+
+    @Transient
+    @JsonIgnore
+    private Dept dept;
+
     public Long getAuthorities(){
         return authorities == null ? 0L : authorities;
     }
@@ -53,6 +66,26 @@ public class FileAuthority extends BaseEntity {
 
     public boolean hasFullAuthorities() {
         return FileAuthority.hasFullAuthorities(this.getAuthorities());
+    }
+
+    public String getUsername () {
+        return this.user == null ? null : this.user.getUsername();
+    }
+
+    public String getDeptName () {
+        return this.dept == null ? null : this.dept.getName();
+    }
+
+    public String getFileName () {
+        return this.file == null ? null : this.file.getName();
+    }
+
+    public Boolean getDir () {
+        return this.file == null ? null : this.file.getIsDir();
+    }
+
+    public String getContentType () {
+        return this.file == null ? null : this.file.getContentType();
     }
 }
 

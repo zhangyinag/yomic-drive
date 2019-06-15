@@ -1,11 +1,12 @@
 package com.yomic.drive.service.impl;
 
 import com.yomic.drive.domain.Dept;
+import com.yomic.drive.domain.File;
 import com.yomic.drive.domain.User;
 import com.yomic.drive.helper.AssertHelper;
 import com.yomic.drive.helper.ExceptionHelper;
-import com.yomic.drive.model.UserCreateModel;
 import com.yomic.drive.repository.DeptRepository;
+import com.yomic.drive.repository.FileRepository;
 import com.yomic.drive.repository.UserRepository;
 import com.yomic.drive.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +25,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private DeptRepository deptRepository;
+
+    @Autowired
+    private FileRepository fileRepository;
 
     @Override
     public List<User> getUserList(Long deptId) {
@@ -44,14 +49,21 @@ public class UserServiceImpl implements UserService {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         String encodedPassword = "{bcrypt}" + passwordEncoder.encode("123456");
         user.setPassword(encodedPassword);
+        List<File> fileList = user.getFileList();
+        if (fileList != null) {
+            List<File> ret = new ArrayList<>();
+            for(File f : fileList) {
+                File item = fileRepository.findById(f.getId()).orElse(null);
+                if (item != null) ret.add(item);
+            }
+            user.setFileList(ret);
+        }
         return userRepository.save(user).getId();
     }
 
     @Override
-    public void deleteUserByUsername(String username) {
-        User user = new User();
-        user.setUsername(username);
-        List<User> deleteUserList = userRepository.findAll(Example.of(user));
-        userRepository.deleteAll(deleteUserList);
+    public void deleteUser(Long id) {
+        AssertHelper.assertNotNull(id);
+        userRepository.deleteById(id);
     }
 }

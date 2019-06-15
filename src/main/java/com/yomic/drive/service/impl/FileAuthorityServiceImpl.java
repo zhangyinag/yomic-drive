@@ -5,6 +5,7 @@ import com.yomic.drive.domain.File;
 import com.yomic.drive.domain.FileAuthority;
 import com.yomic.drive.domain.User;
 import com.yomic.drive.helper.ContextHelper;
+import com.yomic.drive.helper.ExceptionHelper;
 import com.yomic.drive.repository.DeptRepository;
 import com.yomic.drive.repository.FileAuthorityRepository;
 import com.yomic.drive.repository.FileRepository;
@@ -44,8 +45,31 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
     }
 
     @Override
+    public Long updateFileAuthority(Long id, Long authorities) {
+        FileAuthority fa = fileAuthorityRepository.findById(id)
+                .orElseThrow(ExceptionHelper.optionalThrow("未找到 id：" + id));
+        fa.setAuthorities(authorities);
+        fileAuthorityRepository.save(fa);
+        return fa.getId();
+    }
+
+    @Override
     public FileAuthority getFileAuthority(Long sid, Long pid, Boolean principal) {
         return fileAuthorityRepository.findFileAuthorityBySidAndPidAndPrincipal(sid, pid, principal);
+    }
+
+    @Override
+    public List<FileAuthority> getFileAuthoritiesBySid(Long sid, Boolean principal) {
+        List<FileAuthority> ret = fileAuthorityRepository.findFileAuthoritiesBySidAndPrincipal(sid, principal);
+        setDetail(ret);
+        return ret;
+    }
+
+    @Override
+    public List<FileAuthority> getFileAuthoritiesByPid(Long pid) {
+        List<FileAuthority> ret = fileAuthorityRepository.findFileAuthoritiesByPid(pid);
+        setDetail(ret);
+        return ret;
     }
 
     @Override
@@ -114,7 +138,8 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
         Long authorities = null;
         for (int i = 0; i < ancestors.size(); i++) {
             File s = ancestors.get(i);
-            FileAuthority fileAuthority = find(sid, s.getId(), principal).orElse(null);
+            FileAuthority fileAuthority =
+                    fileAuthorityRepository.findFileAuthorityBySidAndPidAndPrincipal(sid, s.getId(), principal);
             if(fileAuthority != null){
                 authorities = fileAuthority.getAuthorities();
                 break;
@@ -129,5 +154,21 @@ public class FileAuthorityServiceImpl implements FileAuthorityService {
         prod.setPid(pid);
         prod.setPrincipal(principal);
         return fileAuthorityRepository.findOne(Example.of(prod));
+    }
+
+    private void setDetail (List<FileAuthority> fileAuthorities) {
+        for(FileAuthority fa : fileAuthorities) {
+            File file = fileRepository.findById(fa.getPid()).orElse(null);
+            Dept dept = null;
+            User user = null;
+            if (fa.getPrincipal()) {
+                user = userRepository.findById(fa.getSid()).orElse(null);
+            } else {
+                dept = deptRepository.findById(fa.getSid()).orElse(null);
+            }
+            fa.setFile(file);
+            fa.setUser(user);
+            fa.setDept(dept);
+        }
     }
 }

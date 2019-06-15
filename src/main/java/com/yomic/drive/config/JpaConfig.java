@@ -1,8 +1,10 @@
 package com.yomic.drive.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -18,5 +20,10 @@ public class JpaConfig implements AuditorAware<String> {
         UserDetails user = (UserDetails) p;
         if (user == null || user.getUsername() == null) return Optional.of("system");
         return Optional.of(user.getUsername());
+    }
+
+    @Bean
+    public OpenEntityManagerInViewFilter openEntityManagerInViewFilter() {
+        return new OpenEntityManagerInViewFilter();
     }
 }

@@ -1,6 +1,7 @@
 package com.yomic.drive.web;
 
 import com.yomic.drive.domain.File;
+import com.yomic.drive.domain.RecycleFile;
 import com.yomic.drive.helper.FileHelper;
 import com.yomic.drive.helper.JsonResult;
 import com.yomic.drive.helper.ValidationHelper;
@@ -18,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Api(tags = "文件相关操作")
@@ -60,6 +60,12 @@ public class FileController {
         return new JsonResult<>(id);
     }
 
+    @ApiOperation("更新文件")
+    @PutMapping("/files/{id}")
+    public JsonResult<Long> updateFile (MultipartFile file, @PathVariable Long id, String desc) {
+        return new JsonResult<>(fileService.updateFile(file, id, desc));
+    }
+
     @ApiOperation("下载文件")
     @GetMapping("/files/download/{id}")
     public ResponseEntity<FileSystemResource> uploadFile (@PathVariable Long id, HttpServletResponse response) {
@@ -78,6 +84,38 @@ public class FileController {
     @PostMapping("/files/rename/{id}")
     public JsonResult<Long> renameFile (@PathVariable Long id, @NotEmpty @RequestParam String name) {
         return JsonResult.success(fileService.rename(id, name));
+    }
+
+    @ApiOperation("获取回收文件列表")
+    @GetMapping("/files/recycle")
+    public JsonResult<List<RecycleFile>> getRecycleFiles () {
+        return JsonResult.success(fileService.getRecycleFiles());
+    }
+
+    @ApiOperation("回收文件")
+    @PutMapping("/files/recycle/{id}")
+    public JsonResult recycleFile (@PathVariable Long id) {
+        fileService.recycleFile(id);
+        return JsonResult.success(null);
+    }
+
+    @ApiOperation("删除文件")
+    @DeleteMapping("/files/{id}")
+    public JsonResult deleteFile (@PathVariable Long id) {
+        fileService.deleteFile(id);
+        return JsonResult.success(null);
+    }
+
+    @ApiOperation("批量回收文件")
+    @PutMapping("/files/batch/recycle")
+    public JsonResult batchRecycleFiles (@RequestBody Long ids) {
+        return JsonResult.success(null);
+    }
+
+    @ApiOperation("批量删除文件")
+    @DeleteMapping("/files/batch")
+    public JsonResult batchDeleteFiles (@RequestBody Long ids) {
+        return JsonResult.success(null);
     }
 
 }

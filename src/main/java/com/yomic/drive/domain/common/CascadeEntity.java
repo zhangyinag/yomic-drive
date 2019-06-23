@@ -15,7 +15,7 @@ public class CascadeEntity<E extends CascadeEntity> extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY)
     private E parent;
 
-    @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<E> children;
 
     public Long getParentId () {

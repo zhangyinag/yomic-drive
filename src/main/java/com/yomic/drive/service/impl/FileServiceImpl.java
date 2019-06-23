@@ -2,13 +2,13 @@ package com.yomic.drive.service.impl;
 
 import ch.qos.logback.core.util.FileUtil;
 import com.yomic.drive.config.AppProperties;
-import com.yomic.drive.domain.File;
-import com.yomic.drive.domain.FileAuthority;
-import com.yomic.drive.domain.User;
+import com.yomic.drive.domain.*;
 import com.yomic.drive.helper.AssertHelper;
 import com.yomic.drive.helper.ContextHelper;
 import com.yomic.drive.helper.ExceptionHelper;
 import com.yomic.drive.repository.FileRepository;
+import com.yomic.drive.repository.FileTrackRepository;
+import com.yomic.drive.repository.RecycleFileRepository;
 import com.yomic.drive.repository.UserRepository;
 import com.yomic.drive.service.FileAuthorityService;
 import com.yomic.drive.service.FileService;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +43,12 @@ public class FileServiceImpl implements FileService {
     @Autowired
     private FileAuthorityService fileAuthorityService;
 
+    @Autowired
+    private RecycleFileRepository recycleFileRepository;
+
+    @Autowired
+    private FileTrackRepository fileTrackRepository;
+
     @Override
     public Long saveFile(MultipartFile file, Long parentId) {
         AssertHelper.assertNotNull(file, parentId);
@@ -50,6 +57,30 @@ public class FileServiceImpl implements FileService {
         toStorage(f, file);
         f = fileRepository.saveAndFlush(f);
         return f.getId();
+    }
+
+    @Override
+    @Transactional
+    public Long updateFile(MultipartFile file, Long id, String desc) {
+        AssertHelper.assertNotNull(file, id);
+        File old = fileRepository.findById(id).orElseThrow(ExceptionHelper.optionalThrow("未找到文件：" + id));
+        access(ContextHelper.getCurrentUserId(), id, FileAuthority.UPDATE);
+        FileTrack track = new FileTrack();
+        track.setDesc(desc);
+        track.setFileId(id);
+        track.setFileSize(old.getSize());
+        track.setModifiedBy(ContextHelper.getCurrentUsername());
+        track.setModifiedDate(new Date());
+        fileTrackRepository.save(track);
+
+        old.setSize(file.getSize());
+        old.setModifyBy(ContextHelper.getCurrentUsername());
+        old.setModifyDate(new Date());
+        old.setUuid(UUID.randomUUID().toString());
+
+        toStorage(old, file);
+        old = fileRepository.saveAndFlush(old);
+        return old.getId();
     }
 
     @Override
@@ -94,8 +125,9 @@ public class FileServiceImpl implements FileService {
     @Override
     public Long saveDir(String name, Long parentId) {
         assert name != null;
+        File parent = null;
         if(parentId != null) {
-            fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件夹 [" + parentId + "]"));
+            parent = fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件夹 [" + parentId + "]"));
         }
         File query = new File();
         query.setParentId(parentId);
@@ -107,6 +139,7 @@ public class FileServiceImpl implements FileService {
         entity.setName(name);
         entity.setStatus(true);
         entity.setIsDir(true);
+        entity.setShare(parent != null ? parent.getShare() : true);
         entity.setUploadDate(new Date());
         entity.setModifyDate(new Date());
         entity.setUploadBy(ContextHelper.getCurrentUsername());
@@ -174,6 +207,7 @@ public class FileServiceImpl implements FileService {
         file.setName("个人文件夹");
         file.setStatus(true);
         file.setIsDir(true);
+        file.setShare(false);
         file.setUploadDate(new Date());
         file.setModifyDate(new Date());
         file.setUploadBy(username);
@@ -183,11 +217,37 @@ public class FileServiceImpl implements FileService {
         return file;
     }
 
+    @Override
+    public void deleteFile(Long id) {
+        RecycleFile bin = recycleFileRepository.findById(id)
+                .orElseThrow(ExceptionHelper.optionalThrow("未找到回收记录: " + id));
+        recycleFileRepository.delete(bin);
+    }
+
+    @Override
+    @Transactional
+    public void recycleFile(Long id) {
+        File file = fileRepository.findById(id).orElseThrow(ExceptionHelper.optionalThrow("未找到文件 :" + id));
+        file.invalid();
+        fileRepository.save(file);
+        RecycleFile entity = new RecycleFile();
+        entity.setFile(file);
+        entity.setRecycleDate(new Date());
+        entity.setRecycleBy(ContextHelper.getCurrentUsername());
+        recycleFileRepository.save(entity);
+    }
+
+    @Override
+    public List<RecycleFile> getRecycleFiles() {
+        // TODO
+       return recycleFileRepository.findRecycleFilesByRecycleBy(ContextHelper.getCurrentUsername());
+    }
+
     private File toFile(MultipartFile file, Long parentId) {
         assert file != null;
-
+        File parent = null;
         if (parentId != null) {
-            fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件 [" + parentId + "]"));
+            parent = fileRepository.findById(parentId).orElseThrow(() -> new RuntimeException("未找到父级文件 [" + parentId + "]"));
         }
         // 根据文件名判断新增还是更新
         String filename = file.getOriginalFilename();
@@ -213,7 +273,7 @@ public class FileServiceImpl implements FileService {
             f.setStatus(true);
             f.setContentType(file.getContentType());
         }
-
+        f.setShare(parent != null ? parent.getShare() : true);
         f.setModifyBy(handler);
         f.setModifyDate(new Date());
         f.setUuid(UUID.randomUUID().toString());

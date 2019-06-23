@@ -72,4 +72,13 @@ public class File extends CascadeEntity<File> {
         }
         return parents;
     }
+
+    public void invalid () {
+        this.setStatus(false);
+        if (this.getChildren() != null) {
+            for(File file : this.getChildren()) {
+                file.invalid();
+            }
+        }
+    }
 }

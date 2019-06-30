@@ -80,7 +80,7 @@
                            <target>1.8</target>
                            <fork>true</fork>
                            <!-- executable 可指定也可不用 --> 
-                           <executable>D:\zongzhimin\Java\jdk1.8.0_144\bin\javac</executable>
+                          
                   </configuration>
          </plugin>
         </plugins>
